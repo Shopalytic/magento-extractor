@@ -1,0 +1,83 @@
+customer_entity
+- entity_id
+- email
+- created_at
+- updated_at
+
+sales_flat_order
+- entity_id
+- customer_id
+- shipping_description
+- discount_amount
+- grand_total
+- shipping_amount
+- subtotal
+- tax_amount
+- total_qty_ordered
+- total_refunded
+- disocunt_refunded
+- shipping_refunded
+- tax_refunded
+- subtotal_refunded
+- customer_is_guest
+- quote_id
+- customer_email
+- customer_firstname
+- customer_lastname
+- shipping_method
+- created_at
+- updated_at
+- total_item_count
+
+sales_flat_order_address
+- entity_id
+- parent_id
+- customer_id
+- postcode
+- city
+- country_id
+- address_type
+
+sales_flat_order_item (how do we get attributes?)
+- item_id
+- order_id
+- quote_item_id
+- created_at
+- updated_at
+- product_id
+- qty_ordered
+- price
+- row_total
+- qty_refunded
+- base_cost
+
+
+< product + categories >
+catalog_product_entity
+- entity_id
+- sku
+- created_at
+- updated_at
+
+sales_flat_quote
+- entity_id
+- created_at
+- updated_at
+- items_count
+- items_qty
+- grand_total
+- customer_id
+- customer_is_guest
+- coupon_code
+- subtotal
+
+sales_flat_quote_item (+ attributes)
+- item_id
+- quote_id
+- created_at
+- updated_at
+- product_id
+- qty
+- price
+- row_total
+- base_cost

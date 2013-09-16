@@ -1,0 +1,9 @@
+<?xml version="1.0"?>
+<config>
+    <modules>
+        <Shopalytic_Extractor>
+            <active>true</active>
+            <codePool>community</codePool>
+        </Shopalytic_Extractor>
+    </modules>
+</config>
