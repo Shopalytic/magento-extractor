@@ -17,7 +17,27 @@
             </shopalytic_extractor>
         </models>
     </global>
-    <adminhtml>
+    <default>
+        <shopalytic_extractor>
+            <configure>
+                <enabled>1</enabled>
+                <project_token />
+                <debug>0</debug>
+            </configure>
+        </shopalytic_extractor>
+    </default>
+    <frontend>
+        <routers>
+            <extractor>
+                <use>standard</use>
+                <args>
+                    <module>Shopalytic_Extractor</module>
+                    <frontName>shopalytic</frontName>
+                </args>
+            </extractor>
+        </routers>
+    </frontend>
+        <adminhtml>
         <acl>
             <resources>
                 <admin>
@@ -38,11 +58,4 @@
             </resources>
         </acl>
     </adminhtml>
-    <default>
-        <shopalytic_extractor>
-            <configure>
-                <enabled>0</enabled>
-            </configure>
-        </shopalytic_extractor>
-    </default>
 </config>
