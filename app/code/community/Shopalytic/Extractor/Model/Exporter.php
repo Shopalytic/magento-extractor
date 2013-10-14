@@ -1,13 +1,17 @@
 <?php
 
 class Shopalytic_Extractor_Model_Exporter extends Shopalytic_Extractor_Model_ExporterBase {
-	public function customers() {
-		$customers = array();
-
-		$customer_collection = Mage::getModel('customer/customer')->getCollection()
+	public function customers_collection() {
+		return Mage::getModel('customer/customer')->getCollection()
 			->addAttributeToSelect('firstname')
 			->addAttributeToSelect('lastname')
 			->addAttributeToFilter('updated_at', array('from' => $this->last_update, 'to' => $this->stop_time));
+	}
+
+	public function customers() {
+		$customers = array();
+
+		$customer_collection = $this->customers_collection();
 		$customer_collection->getSelect()->limit($this->limit, $this->offset);
 
 		if(!count($customer_collection)) {
@@ -30,15 +34,19 @@ class Shopalytic_Extractor_Model_Exporter extends Shopalytic_Extractor_Model_Exp
 		return $customers;
 	}
 
-	public function products() {
-		$products = array();
-
-		$product_collection = Mage::getModel('catalog/product')->getCollection()
+	public function products_collection() {
+		return Mage::getModel('catalog/product')->getCollection()
 			->addAttributeToSelect('name')
 			->addAttributeToSelect('cost')
 			->addAttributeToSelect('url_path')
 			->addAttributeToSelect('price')
 			->addAttributeToFilter('updated_at', array('from' => $this->last_update, 'to' => $this->stop_time));
+	}
+
+	public function products() {
+		$products = array();
+
+		$product_collection = $this->product_collection();
 		$product_collection->getSelect()->limit($this->limit, $this->offset);
 
 		if(!count($product_collection)) {
@@ -73,11 +81,15 @@ class Shopalytic_Extractor_Model_Exporter extends Shopalytic_Extractor_Model_Exp
 		return $products;
 	}
 
+	public function orders_collection() {
+		return Mage::getModel('sales/order')->getCollection()
+			->addAttributeToFilter('updated_at', array('from' => $this->last_update, 'to' => $this->stop_time));
+	}
+
 	public function orders() {
 		$orders = array();
 
-		$orders_collection = Mage::getModel('sales/order')->getCollection()
-			->addAttributeToFilter('updated_at', array('from' => $this->last_update, 'to' => $this->stop_time));
+		$orders_collection = $this->orders_collection();
 		$orders_collection->getSelect()->limit($this->limit, $this->offset);
 
 		if(!count($orders_collection)) {
@@ -185,9 +197,13 @@ class Shopalytic_Extractor_Model_Exporter extends Shopalytic_Extractor_Model_Exp
 		return $orders;
 	}
 
-	public function carts() {
-		$quote_collection = Mage::getModel('sales/quote')->getCollection()
+	public function carts_collection() {
+		return Mage::getModel('sales/quote')->getCollection()
 			->addFieldToFilter('updated_at', array('from' => $this->last_update, 'to' => $this->stop_time));
+	}
+
+	public function carts() {
+		$quote_collection = $this->carts_collection();
 		$quote_collection->getSelect()->limit($this->limit, $this->offset);
 
 		if(!count($quote_collection)) {

@@ -2,7 +2,7 @@
 
 class Shopalytic_Extractor_Model_ExporterBase {
 	//const TRACKING_URL = 'https://magento.shopalytic.com';
-	const TRACKING_URL = 'http://requestb.in/tthf6htt';
+	const TRACKING_URL = 'http://requestb.in/zzw7lyzz';
 
 	protected $last_update,
 		$stop_time,
@@ -11,7 +11,7 @@ class Shopalytic_Extractor_Model_ExporterBase {
 		$offset,
 		$errors;
 
-	public function __construct($last_update, $stop_time, $fields, $limit, $offset) {
+	public function __construct($last_update, $stop_time, $fields, $limit = 1000, $offset = 0) {
 		$this->last_update = $last_update;
 		$this->stop_time = $stop_time;
 		$this->fields = $fields;
@@ -66,7 +66,12 @@ class Shopalytic_Extractor_Model_ExporterBase {
 		}
 	}
 
-	public function send($method, $manifest_id) {
+	public function count($method) {
+		$collection = $this->{ $method . '_collection' }();
+		return $collection->count();
+	}
+
+	public function send($method, $manifest_id, $data_format = 'json') {
 		if(!$this->helper()->is_enabled()) {
 			return false;
 		}
@@ -78,7 +83,11 @@ class Shopalytic_Extractor_Model_ExporterBase {
 			return false;
 		}
 
-		$csv_data = $csv->convert($results);
+		if($data_format == 'csv') {
+			$processed_data = $csv->convert($results);
+		} else {
+			$processed_data = json_encode($results);
+		}
 
 		$client = new Varien_Http_Client(self::TRACKING_URL);
 		$client->setMethod(Varien_Http_Client::POST);
@@ -91,11 +100,11 @@ class Shopalytic_Extractor_Model_ExporterBase {
 		$client->setParameterPost('count', count($results));
 		$client->setParameterPost('manifest_id', $manifest_id);
 
-		if(!function_exists('gzcompress')) {
-			$client->setParameterPost('data', gzcompress($csv_data));
+		if(function_exists('gzcompress')) {
+			$client->setParameterPost('data', gzcompress($processed_data));
 			$client->setParameterPost('gzip', true);
 		} else {
-			$client->setParameterPost('data', $csv_data);
+			$client->setParameterPost('data', $processed_data);
 			$client->setParameterPost('gzip', false);
 		}
 
