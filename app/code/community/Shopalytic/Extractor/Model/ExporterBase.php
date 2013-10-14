@@ -1,8 +1,8 @@
 <?php
 
 class Shopalytic_Extractor_Model_ExporterBase {
-	//const TRACKING_URL = 'https://magento.shopalytic.com';
-	const TRACKING_URL = 'http://requestb.in/zzw7lyzz';
+	const TRACKING_URL = 'https://bulk.shopalytic.com';
+	const TRACKING_URL_DEV = 'http://requestb.in/zzw7lyzz';
 
 	protected $last_update,
 		$stop_time,
@@ -71,8 +71,17 @@ class Shopalytic_Extractor_Model_ExporterBase {
 		return $collection->count();
 	}
 
+	public function tracking_url() {
+		if(file_exists('/vagrant/SHOPALYTIC_DEV')) {
+			return self::TRACKING_URL_DEV;
+		}
+
+		return self::TRACKING_URL;
+	}
+
 	public function send($method, $manifest_id, $data_format = 'json') {
 		if(!$this->helper()->is_enabled()) {
+			$this->error('Extension disabled');
 			return false;
 		}
 
@@ -80,6 +89,7 @@ class Shopalytic_Extractor_Model_ExporterBase {
 
 		$results = $this->$method();
 		if(!$results) {
+			$this->error('Method "' . $method . '" not found');
 			return false;
 		}
 
@@ -89,7 +99,7 @@ class Shopalytic_Extractor_Model_ExporterBase {
 			$processed_data = json_encode($results);
 		}
 
-		$client = new Varien_Http_Client(self::TRACKING_URL);
+		$client = new Varien_Http_Client($this->tracking_url());
 		$client->setMethod(Varien_Http_Client::POST);
 		$client->setConfig(array(
 			'maxredirects' => 0,
@@ -111,17 +121,18 @@ class Shopalytic_Extractor_Model_ExporterBase {
 		try {
 			$response = $client->request();
 			if($response->isSuccessful()) {
-				//echo $response->getBody();
 				return true;
 			} else {
-				print_r($response);
-				$this->helper()->debug('Failed to transfer data: (' . $response->getCode() . ') ' . $response->getMessage());
+				$msg = 'Failed to transfer data: ' . $response->getMessage();
+				$this->error($msg);
+				$this->helper()->debug($msg);
 				return false;
 			}
 
-			print_r($response);
 		} catch(Exception $e) {
-			$this->helper()->debug('Failed to transfer data');
+			$msg = 'Failed to transfer data';
+			$this->error($msg);
+			$this->helper()->debug($msg);
 			return false;
 		}
 	}

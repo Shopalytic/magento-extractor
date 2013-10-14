@@ -18,8 +18,10 @@ class Shopalytic_Extractor_ExtractController extends Mage_Core_Controller_Front_
 				'status' => '403',
 				'message' => 'Invalid token'
 			));
-		} elseif(method_exists($exporter, $type)) {
-			$exporter->send($type, $manifest_id, 'json');
+			die();
+		}
+
+		if(method_exists($exporter, $type) && $exporter->send($type, $manifest_id, 'json')) {
 			echo json_encode(array(
 				'status' => '200'
 			));
