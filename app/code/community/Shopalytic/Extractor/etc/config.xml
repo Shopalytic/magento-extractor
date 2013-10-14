@@ -21,7 +21,7 @@
         <shopalytic_extractor>
             <configure>
                 <enabled>1</enabled>
-                <project_token />
+                <token />
                 <debug>0</debug>
             </configure>
         </shopalytic_extractor>

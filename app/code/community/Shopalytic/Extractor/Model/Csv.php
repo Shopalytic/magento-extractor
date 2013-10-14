@@ -40,7 +40,7 @@ class Shopalytic_Extractor_Model_CSV {
 		$csv_line = array();
 		foreach ($line as $v) {
 			$csv_line[] = is_array($v) ?
-					$this->convertLine($v) :
+				$this->convertLine($v) :
 					$this->text_separator . str_replace($this->text_separator, $this->replace_text_separator, $v) . $this->text_separator;
 		}
 		return implode($this->delimiter, $csv_line);

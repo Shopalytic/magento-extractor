@@ -19,7 +19,7 @@ class Shopalytic_Extractor_Helper_Data extends Mage_Core_Helper_Abstract {
 		return $this->get_config('enabled');
 	}
 
-	public function project_token() {
-		return $this->get_config('project_token');
+	public function token() {
+		return $this->get_config('token');
 	}
 }

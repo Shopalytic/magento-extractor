@@ -25,14 +25,14 @@
                             <show_in_website>1</show_in_website>
                             <show_in_store>1</show_in_store>
                         </enabled>
-						<project_token translate="label">
-                            <label>Project Token</label>
+						<token translate="label">
+                            <label>API Token</label>
                             <frontend_type>text</frontend_type>
                             <sort_order>101:</sort_order>
                             <show_in_default>1</show_in_default>
                             <show_in_website>1</show_in_website>
                             <show_in_store>1</show_in_store>
-                        </project_token>
+                        </token>
 						<debug translate="label">
                             <label>Debug Mode</label>
                             <source_model>adminhtml/system_config_source_yesno</source_model>
