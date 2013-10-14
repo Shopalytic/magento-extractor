@@ -88,10 +88,19 @@ class Shopalytic_Extractor_Model_Exporter extends Shopalytic_Extractor_Model_Exp
 			$shipping = $order->getShippingAddress();
 			$billing = $order->getBillingAddress();
 
+			switch($order->getState()) {
+				case Mage_Sales_Model_Order::STATE_CANCELED:
+					$order_status = 'void';
+					break;
+				default:
+                    $order_status = 'closed';
+					break;
+			}
+
 			$properties = array(
 				'order_id' => $order->getIncrementId(),
 				'cart_id' => $order->getQuoteId(),
-				'status' => $order->getState(),
+				'status' => $order_status,
 				'order_date' => $order->getCreatedAt(),
 				'updated_at' => $order->getUpdatedAt(),
 				'shipping_description' => $order->getShippingDescription(),
