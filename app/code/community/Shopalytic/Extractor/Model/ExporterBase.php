@@ -129,4 +129,8 @@ class Shopalytic_Extractor_Model_ExporterBase {
 	protected function helper() {
 		return Mage::helper('shopalytic_extractor');
 	}
+
+	public function valid_token($token) {
+		return md5($this->helper()->token() . '_shopalytic') == $token;
+	}
 }
