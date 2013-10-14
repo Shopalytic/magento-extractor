@@ -12,7 +12,8 @@ class Shopalytic_Extractor_ExtractController extends Mage_Core_Controller_Front_
 		$fields = explode('|', $request->getParam('fields'));
 
 		$exporter = new Shopalytic_Extractor_Model_Exporter($last_update, $stop_time, $fields, $limit, $offset);
-		if(method_exists($exporter, $type) && $exporter->send($type, $manifest_id)) {
+		if(method_exists($exporter, $type)) {
+			$exporter->send($type, $manifest_id);
 			echo json_encode(array(
 				'status' => '200'
 			));
