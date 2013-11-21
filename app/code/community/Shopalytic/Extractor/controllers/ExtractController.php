@@ -62,16 +62,35 @@ class Shopalytic_Extractor_ExtractController extends Mage_Core_Controller_Front_
 		}
 	}
 
-	# /shopalytic/config
-	public function configAction() {
+	# /shopalytic/initialize
+	public function initializeAction() {
+		$helper = Mage::helper('shopalytic_extractor');
+		$request = Mage::app()->getRequest();
 		$web = Mage::getStoreConfig('web');
+		$token = $request->getParam('token');
 
-		echo json_encode(array(
-			'status' => '200',
-			'config' => array(
-				'url' => $web['secure']['base_url'],
-				'name' => Mage::app()->getStore()->getFrontendName()
-			)
-		));
+		if($helper->token()) {
+			echo json_encode(array(
+				'status' => '403',
+				'message' => 'Token already exists'
+			));
+		} elseif(!$token) {
+			echo json_encode(array(
+				'status' => '403',
+				'message' => 'Token is invalid'
+			));
+		} else {
+			// Save the token
+			$helper->set_token($token);
+
+			echo json_encode(array(
+				'status' => '200',
+				'config' => array(
+					'url' => $web['secure']['base_url'],
+					'name' => Mage::app()->getStore()->getFrontendName(),
+					'token' => $helper->token()
+				)
+			));
+		}
 	}
 }
