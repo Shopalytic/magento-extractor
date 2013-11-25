@@ -72,12 +72,14 @@ class Shopalytic_Extractor_ExtractController extends Mage_Core_Controller_Front_
 		if($helper->token()) {
 			echo json_encode(array(
 				'status' => '403',
-				'message' => 'Token already exists'
+				'code' => '100',
+				'message' => 'Website has already been registered to another Shopalytic site'
 			));
 		} elseif(!$token) {
 			echo json_encode(array(
 				'status' => '403',
-				'message' => 'Token is invalid'
+				'code' => '101',
+				'message' => 'Install token is invalid'
 			));
 		} else {
 			// Save the token
