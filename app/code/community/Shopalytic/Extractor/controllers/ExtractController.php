@@ -84,13 +84,16 @@ class Shopalytic_Extractor_ExtractController extends Mage_Core_Controller_Front_
 		} else {
 			// Save the token
 			$helper->set_token($token);
+			$store = Mage::app()->getStore();
 
 			echo json_encode(array(
 				'status' => '200',
 				'config' => array(
 					'url' => $web['secure']['base_url'],
-					'name' => Mage::app()->getStore()->getFrontendName(),
-					'token' => $helper->token()
+					'name' => $store->getFrontendName(),
+					'token' => $helper->token(),
+					'timezone' => $store->getConfig('general/locale/timezone'),
+					'currency_code' => Mage::app()->getStore()->getCurrentCurrencyCode()
 				)
 			));
 		}
