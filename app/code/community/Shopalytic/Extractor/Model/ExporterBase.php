@@ -1,8 +1,9 @@
 <?php
 
 class Shopalytic_Extractor_Model_ExporterBase {
-	const TRACKING_URL = 'https://bulk.shopalytic.com';
-	const TRACKING_URL_DEV = 'http://requestb.in/zzw7lyzz';
+	const TRACKING_URL = 'https://bulk.shopalytic.com/bulk_import/import';
+	#const TRACKING_URL_DEV = 'http://requestb.in/zzw7lyzz';
+	const TRACKING_URL_DEV = 'http://192.168.33.10:3000/bulk_import/import';
 
 	protected $last_update,
 		$stop_time,
@@ -87,8 +88,9 @@ class Shopalytic_Extractor_Model_ExporterBase {
 
 		$csv = new Shopalytic_Extractor_Model_CSV();
 
-		$results = $this->$method();
-		if(!$results) {
+		if(method_exists($this, $method)) {
+			$results = $this->$method();
+		} else {
 			$this->error('Method "' . $method . '" not found');
 			return false;
 		}
@@ -109,6 +111,7 @@ class Shopalytic_Extractor_Model_ExporterBase {
 		$client->setParameterPost('token', $this->helper()->token());
 		$client->setParameterPost('count', count($results));
 		$client->setParameterPost('manifest_id', $manifest_id);
+		$client->setParameterPost('data_type', $method);
 
 		if(function_exists('gzcompress')) {
 			$client->setParameterPost('data', gzcompress($processed_data));
@@ -123,9 +126,8 @@ class Shopalytic_Extractor_Model_ExporterBase {
 			if($response->isSuccessful()) {
 				return true;
 			} else {
-				$msg = 'Failed to transfer data: ' . $response->getMessage();
-				$this->error($msg);
-				$this->helper()->debug($msg);
+				$this->error('Failed to transfer data: ' . $response->getMessage());
+				$this->helper()->debug($response->getRawBody());
 				return false;
 			}
 
@@ -142,6 +144,6 @@ class Shopalytic_Extractor_Model_ExporterBase {
 	}
 
 	public function valid_token($token) {
-		return md5($this->helper()->token() . '_shopalytic') == $token;
+		return $this->helper()->token() == $token;
 	}
 }

@@ -20,7 +20,7 @@ class Shopalytic_Extractor_Model_Exporter extends Shopalytic_Extractor_Model_Exp
 
 		foreach($customer_collection as $customer) {
 			$properties = array(
-				'customer_id' => $customer->getId(),
+				'cart_customer_id' => $customer->getId(),
 				'first_name' => $customer->getFirstname(),
 				'last_name' => $customer->getlastname(),
 				'email' => $customer->getEmail(),
@@ -46,7 +46,7 @@ class Shopalytic_Extractor_Model_Exporter extends Shopalytic_Extractor_Model_Exp
 	public function products() {
 		$products = array();
 
-		$product_collection = $this->product_collection();
+		$product_collection = Mage::getResourceModel('catalog/product_collection');
 		$product_collection->getSelect()->limit($this->limit, $this->offset);
 
 		if(!count($product_collection)) {
@@ -58,8 +58,8 @@ class Shopalytic_Extractor_Model_Exporter extends Shopalytic_Extractor_Model_Exp
 				'product_id' => $product->getId(),
 				'sku' => $product->getSku(),
 				'name' => $product->getName(),
-				'price' => $product->getPrice(),
-				'cost' => $product->getCost(),
+				'price' => $this->money($product->getPrice()),
+				'cost' => $this->money($product->getCost()),
 				'url_path' => $product->getUrlPath(),
 				'created_at' => $product->getCreatedAt(),
 				'updated_at' => $product->getUpdatedAt()
@@ -118,9 +118,9 @@ class Shopalytic_Extractor_Model_Exporter extends Shopalytic_Extractor_Model_Exp
 				'shipping_description' => $order->getShippingDescription(),
 				'shipping_method' => $order->getShippingMethod(),
 				'guest' => $order->getCustomerIsGuest(),
-				'total_qty' => $order->getTotalQtyOrdered(),
-				'customer_id' => $order->getCustomerId(),
-				'customer_email' => $order->getCustomerEmail(),
+				'total_qty' => (int) $order->getTotalQtyOrdered(),
+				'cart_customer_id' => $order->getCustomerId(),
+				'email' => $order->getCustomerEmail(),
 				'customer_first_name' => $order->getCustomerFirstname(),
 				'customer_last_name' => $order->getCustomerLastname(),
 				'billing' => array(
@@ -133,16 +133,16 @@ class Shopalytic_Extractor_Model_Exporter extends Shopalytic_Extractor_Model_Exp
 					'zipcode' => $shipping->getPostcode(),
 					'country' => Mage::getModel('directory/country')->load($shipping->getCountryId())->getIso3Code()
 				),
-				'qty_ordered' => $order->getTotalQtyOrdered(),
-				'total' => $order->getGrandTotal(),
-				'subtotal' => $order->getSubtotal(),
-				'total_shipping' => $order->getShippingAmount(),
-				'total_tax' => $order->getTaxAmount(),
-				'total_discount' => abs($order->getDiscountAmount()),
-				'total_refund' => $order->getTotalRefunded(),
-				'discount_refunded' => $order->getDiscountRefunded(),
-				'shipping_refunded' => $order->getShippingRefunded(),
-				'tax_refunded' => $order->getTaxRefunded()
+				'qty_ordered' => (int) $order->getTotalQtyOrdered(),
+				'total' => $this->money($order->getGrandTotal() - $order->getTotalRefunded()),
+				'subtotal' => $this->money($order->getSubtotal() - $order->getSubtotalRefunded()),
+				'total_shipping' => $this->money($order->getShippingAmount()),
+				'total_tax' => $this->money($order->getTaxAmount()),
+				'total_discount' => $this->money(abs($order->getDiscountAmount())),
+				'total_refund' => $this->money($order->getTotalRefunded()),
+				'refunded_discount' => $this->money($order->getDiscountRefunded()),
+				'refunded_shipping' => $this->money($order->getShippingRefunded()),
+				'refunded_tax' => $this->money($order->getTaxRefunded())
 			);
 
 			// payment type
@@ -156,8 +156,12 @@ class Shopalytic_Extractor_Model_Exporter extends Shopalytic_Extractor_Model_Exp
 			if($order->getCouponCode()) {
 				$properties['discounts'] = array(
 					'code' => $order->getCouponCode(),
-					'value' => abs($order->getDiscountAmount())
+					'value' => $this->money(abs($order->getDiscountAmount()))
 				);
+			}
+
+			if($order->getGiftCardsAmount() > 0) {
+				$properties['total_giftcard'] = $this->money($order->getGiftCardsAmount());
 			}
 
 			// Line items
@@ -168,12 +172,11 @@ class Shopalytic_Extractor_Model_Exporter extends Shopalytic_Extractor_Model_Exp
 					$properties['line_items'][] = array(
 						'sku' => $item['sku'],
 						'product_id' => $item['product_id'],
-						'qty_ordered' => $item['qty_ordered'],
-						'qty_refunded' => $item['qty_refunded'],
-						'qty_canceled' => $item['qty_canceled'],
-						'price' => $item['price'],
-						'amount_refunded' => $item['amount_refunded'],
-						'cost' => $item['base_cost']
+						'qty_ordered' => (int) $item['qty_ordered'],
+						'qty_refunded' => (int) $item['qty_refunded'],
+						'price' => $this->money($item['price']),
+						'amount_refunded' => $this->money($item['amount_refunded']),
+						'cost' => $this->money($item['base_cost'])
 					);
 				}
 			}
@@ -181,9 +184,9 @@ class Shopalytic_Extractor_Model_Exporter extends Shopalytic_Extractor_Model_Exp
 			$tracking_numbers = Mage::getResourceModel('sales/order_shipment_track_collection')
 	->setOrderFilter($order);
 			if($tracking_numbers) {
-				$properties['tracking_numbers'] = array();
+				$properties['shipments'] = array();
 				foreach($tracking_numbers as $track) {
-					$properties['tracking_numbers'][] = array(
+					$properties['shipments'][] = array(
 						'carrier' => $track->getCarrierCode(),
 						'tracking_number' => $track->getTrackNumber(),
 						'date_shipped' => $track->getCreatedAt()
@@ -221,12 +224,12 @@ class Shopalytic_Extractor_Model_Exporter extends Shopalytic_Extractor_Model_Exp
 				'created_at' => $quote->getCreatedAt(),
 				'updated_at' => $quote->getUpdatedAt(),
 				'guest' => $quote->getCustomerIsGuest(),
-				'customer_id' => $quote->getCustomerId(),
-				'customer_email' => $quote->getCustomerEmail(),
+				'cart_customer_id' => $quote->getCustomerId(),
+				'email' => $quote->getCustomerEmail(),
 				'customer_first_name' => $quote->getCustomerFirstname(),
 				'customer_last_name' => $quote->getCustomerLastname(),
-				'total' => $quote->getGrandTotal(),
-				'subtotal' => $quote->getSubtotal()
+				'total' => $this->money($quote->getGrandTotal()),
+				'subtotal' => $this->money($quote->getSubtotal())
 			);
 
 			$payment = $quote->getPayment();
@@ -238,7 +241,7 @@ class Shopalytic_Extractor_Model_Exporter extends Shopalytic_Extractor_Model_Exp
 			}
 
 			if($shipping->city || $shipping->zipcode || $shipping->country) {
-				$properties['total_shipping'] = $shipping->getShipping_amount();
+				$properties['total_shipping'] = $this->money($shipping->getShipping_amount());
 
 				$properties['shipping'] = array(
 					'city' => $shipping->getCity(),
@@ -257,15 +260,15 @@ class Shopalytic_Extractor_Model_Exporter extends Shopalytic_Extractor_Model_Exp
 
 			// Discount
 			if(isset($totals['discount'])) {
-				$properties['total_discount'] = abs($totals['discount']->getValue());
+				$properties['total_discount'] = $this->money(abs($totals['discount']->getValue()));
 				$properties['discounts'] = array(
 					'code' => $quote->getCouponCode(),
-					'value' => abs($totals['discount']->getValue())
+					'value' => $this->money(abs($totals['discount']->getValue()))
 				);
 			}
 
 			if(isset($totals['tax'])) {
-				$properties['total_tax'] = $totals['tax']->getValud();
+				$properties['total_tax'] = $this->money($totals['tax']->getValue());
 			}
 
 			// Line items
@@ -276,9 +279,9 @@ class Shopalytic_Extractor_Model_Exporter extends Shopalytic_Extractor_Model_Exp
 					$properties['line_items'][] = array(
 						'sku' => $item['sku'],
 						'product_id' => $item['product_id'],
-						'price' => $item['price'],
-						'cost' => $item['base_cost'],
-						'qty' => $item['qty']
+						'price' => $this->money($item['price']),
+						'cost' => $this->money($item['base_cost']),
+						'qty' => (int) $item['qty']
 					);
 				}
 			}
@@ -287,5 +290,9 @@ class Shopalytic_Extractor_Model_Exporter extends Shopalytic_Extractor_Model_Exp
 		}
 
 		return $quotes;
+	}
+
+	private function money($amt) {
+		return round($amt, 2) * 100;
 	}
 }

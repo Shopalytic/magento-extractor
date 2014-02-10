@@ -21,7 +21,7 @@ class Shopalytic_Extractor_ExtractController extends Mage_Core_Controller_Front_
 			die();
 		}
 
-		if(method_exists($exporter, $type) && $exporter->send($type, $manifest_id, 'json')) {
+		if($exporter->send($type, $manifest_id, 'json')) {
 			echo json_encode(array(
 				'status' => '200'
 			));
@@ -73,7 +73,7 @@ class Shopalytic_Extractor_ExtractController extends Mage_Core_Controller_Front_
 			echo json_encode(array(
 				'status' => '403',
 				'code' => '100',
-				'message' => 'Website has already been registered to another Shopalytic site'
+				'message' => 'Magento plugin is already registered to another Shopalytic site'
 			));
 		} elseif(!$token) {
 			echo json_encode(array(
