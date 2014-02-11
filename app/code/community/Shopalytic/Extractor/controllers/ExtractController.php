@@ -52,6 +52,7 @@ class Shopalytic_Extractor_ExtractController extends Mage_Core_Controller_Front_
 		} else {
 			echo json_encode(array(
 				'status' => '200',
+				'magento_version' => Mage::getVersion(),
 				'counts' => array(
 					'customers' => $exporter->count('customers'),
 					'orders' => $exporter->count('orders'),
