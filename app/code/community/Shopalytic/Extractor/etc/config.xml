@@ -2,7 +2,7 @@
 <config>
     <modules>
         <Shopalytic_extractor>
-            <version>0.0.1</version>
+            <version>1.0.2</version>
         </Shopalytic_extractor>
     </modules>
     <global>
