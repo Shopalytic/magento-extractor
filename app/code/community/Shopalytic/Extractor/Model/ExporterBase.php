@@ -86,7 +86,7 @@ class Shopalytic_Extractor_Model_ExporterBase {
 			return false;
 		}
 
-		$csv = new Shopalytic_Extractor_Model_CSV();
+		$csv = new Shopalytic_Extractor_Model_Csv();
 
 		if(method_exists($this, $method)) {
 			$results = $this->$method();
