@@ -24,8 +24,8 @@ class Shopalytic_Extractor_Model_Exporter extends Shopalytic_Extractor_Model_Exp
 				'first_name' => $customer->getFirstname(),
 				'last_name' => $customer->getlastname(),
 				'email' => $customer->getEmail(),
-				'created_at' => $customer->getCreatedAt(),
-				'updated_at' => $customer->getUpdatedAt()
+				'created_at' => $this->utc($customer->getCreatedAt()),
+				'updated_at' => $this->utc($customer->getUpdatedAt())
 			);
 
 			$customers[] = $properties;
@@ -61,8 +61,8 @@ class Shopalytic_Extractor_Model_Exporter extends Shopalytic_Extractor_Model_Exp
 				'price' => $this->money($product->getPrice()),
 				'cost' => $this->money($product->getCost()),
 				'url_path' => $product->getUrlPath(),
-				'created_at' => $product->getCreatedAt(),
-				'updated_at' => $product->getUpdatedAt()
+				'created_at' => $this->utc($product->getCreatedAt()),
+				'updated_at' => $this->utc($product->getUpdatedAt())
 			);
 
 			$product_categories = $product->getCategoryCollection()->addAttributeToSelect('name');
@@ -113,8 +113,8 @@ class Shopalytic_Extractor_Model_Exporter extends Shopalytic_Extractor_Model_Exp
 				'order_id' => $order->getIncrementId(),
 				'cart_id' => $order->getQuoteId(),
 				'status' => $order_status,
-				'order_date' => $order->getCreatedAt(),
-				'updated_at' => $order->getUpdatedAt(),
+				'order_date' => $this->utc($order->getCreatedAt()),
+				'updated_at' => $this->utc($order->getUpdatedAt()),
 				'shipping_description' => $order->getShippingDescription(),
 				'shipping_method' => $order->getShippingMethod(),
 				'guest' => $order->getCustomerIsGuest(),
@@ -189,7 +189,7 @@ class Shopalytic_Extractor_Model_Exporter extends Shopalytic_Extractor_Model_Exp
 					$properties['shipments'][] = array(
 						'carrier' => $track->getCarrierCode(),
 						'tracking_number' => $track->getTrackNumber(),
-						'date_shipped' => $track->getCreatedAt()
+						'date_shipped' => $this->utc($track->getCreatedAt())
 					);
 				}
 			}
@@ -221,8 +221,8 @@ class Shopalytic_Extractor_Model_Exporter extends Shopalytic_Extractor_Model_Exp
 
 			$properties = array(
 				'cart_id' => $quote->getId(),
-				'created_at' => $quote->getCreatedAt(),
-				'updated_at' => $quote->getUpdatedAt(),
+				'created_at' => $this->utc($quote->getCreatedAt()),
+				'updated_at' => $this->utc($quote->getUpdatedAt()),
 				'guest' => $quote->getCustomerIsGuest(),
 				'cart_customer_id' => $quote->getCustomerId(),
 				'email' => $quote->getCustomerEmail(),
@@ -294,5 +294,9 @@ class Shopalytic_Extractor_Model_Exporter extends Shopalytic_Extractor_Model_Exp
 
 	private function money($amt) {
 		return round($amt, 2) * 100;
+	}
+
+	private function utc($time) {
+		return date('c', strtotime($time));
 	}
 }
