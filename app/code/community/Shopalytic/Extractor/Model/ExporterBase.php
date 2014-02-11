@@ -98,7 +98,7 @@ class Shopalytic_Extractor_Model_ExporterBase {
 		if($data_format == 'csv') {
 			$processed_data = $csv->convert($results);
 		} else {
-			$processed_data = json_encode($results);
+			$processed_data = $this->utf8_json_encode($results);
 		}
 
 		$client = new Varien_Http_Client($this->tracking_url());
@@ -145,5 +145,12 @@ class Shopalytic_Extractor_Model_ExporterBase {
 
 	public function valid_token($token) {
 		return $this->helper()->token() == $token;
+	}
+
+	protected function utf8_json_encode($arr) {
+        //convmap since 0x80 char codes so it takes all multibyte codes (above ASCII 127). So such characters are being "hidden" from normal json_encoding
+        array_walk_recursive($arr, function (&$item, $key) { if (is_string($item)) $item = mb_encode_numericentity($item, array (0x80, 0xffff, 0, 0xffff), 'UTF-8'); });
+        return mb_decode_numericentity(json_encode($arr), array (0x80, 0xffff, 0, 0xffff), 'UTF-8');
+
 	}
 }
