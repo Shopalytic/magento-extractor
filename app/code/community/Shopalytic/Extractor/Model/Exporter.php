@@ -154,8 +154,8 @@ class Shopalytic_Extractor_Model_Exporter extends Shopalytic_Extractor_Model_Exp
 
 			// Discount
 			if($order->getCouponCode()) {
-				$properties['discounts'] = array();
-				$properties['discounts'][] = array(
+				$properties['coupons'] = array();
+				$properties['coupons'][] = array(
 					'code' => $order->getCouponCode(),
 					'value' => $this->money(abs($order->getDiscountAmount()))
 				);
@@ -261,8 +261,8 @@ class Shopalytic_Extractor_Model_Exporter extends Shopalytic_Extractor_Model_Exp
 
 			// Discount
 			if($quote->getCouponCode()) {
-				$properties['discounts'] = array();
-				$properties['discounts'][] = array(
+				$properties['coupons'] = array();
+				$properties['coupons'][] = array(
 					'code' => $quote->getCouponCode(),
 					'value' => $this->money(abs($totals['discount']->getValue()))
 				);
