@@ -4,6 +4,7 @@
         <Shopalytic_Extractor>
             <active>true</active>
             <codePool>community</codePool>
+            <version>1.0.7</version>
         </Shopalytic_Extractor>
     </modules>
 </config>
