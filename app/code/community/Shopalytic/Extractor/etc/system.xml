@@ -15,7 +15,7 @@
                     <show_in_default>1</show_in_default>
                     <show_in_website>1</show_in_website>
                     <show_in_store>1</show_in_store>
-                    <comment><![CDATA[<span style="font-size: 16px; color: red">You must have an account with <a href="https://www.shopalytic.com">Shopalytic.com</a> to use the Shopalytic plugin.]]></comment>
+                    <comment><![CDATA[<span style="font-size: 16px; color: red">You must have an account on <a href="https://www.shopalytic.com">Shopalytic.com</a> to use the Shopalytic plugin.]]></comment>
                     <fields>
 						<enabled translate="label">
                             <label>Enabled</label>
