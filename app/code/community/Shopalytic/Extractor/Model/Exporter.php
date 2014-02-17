@@ -97,9 +97,6 @@ class Shopalytic_Extractor_Model_Exporter extends Shopalytic_Extractor_Model_Exp
 		}
 
 		foreach($orders_collection as $order) {
-			$shipping = $order->getShippingAddress();
-			$billing = $order->getBillingAddress();
-
 			switch($order->getState()) {
 				case Mage_Sales_Model_Order::STATE_CANCELED:
 					$order_status = 'void';
@@ -123,16 +120,6 @@ class Shopalytic_Extractor_Model_Exporter extends Shopalytic_Extractor_Model_Exp
 				'email' => $order->getCustomerEmail(),
 				'customer_first_name' => $order->getCustomerFirstname(),
 				'customer_last_name' => $order->getCustomerLastname(),
-				'billing' => array(
-					'city' => $billing->getCity(),
-					'zipcode' => $billing->getPostcode(),
-					'country' => Mage::getModel('directory/country')->load($billing->getCountryId())->getIso3Code()
-				),
-				'shipping' => array(
-					'city' => $shipping->getCity(),
-					'zipcode' => $shipping->getPostcode(),
-					'country' => Mage::getModel('directory/country')->load($shipping->getCountryId())->getIso3Code()
-				),
 				'qty_ordered' => (int) $order->getTotalQtyOrdered(),
 				'total' => $this->money($order->getGrandTotal() - $order->getTotalRefunded()),
 				'subtotal' => $this->money($order->getSubtotal() - $order->getSubtotalRefunded()),
@@ -144,6 +131,25 @@ class Shopalytic_Extractor_Model_Exporter extends Shopalytic_Extractor_Model_Exp
 				'refunded_shipping' => $this->money($order->getShippingRefunded()),
 				'refunded_tax' => $this->money($order->getTaxRefunded())
 			);
+
+			$shipping = $order->getShippingAddress();
+			if($shipping) {
+				$properties['shipping'] = array(
+					'city' => $shipping->getCity(),
+					'zipcode' => $shipping->getPostcode(),
+					'country' => Mage::getModel('directory/country')->load($shipping->getCountryId())->getIso3Code()
+				);
+			}
+
+			$billing = $order->getBillingAddress();
+			if($billing) {
+				$properties['billing'] = array(
+					'city' => $billing->getCity(),
+					'zipcode' => $billing->getPostcode(),
+					'country' => Mage::getModel('directory/country')->load($billing->getCountryId())->getIso3Code()
+				);
+			}
+
 
 			// payment type
 			$payment = $order->getPayment();
