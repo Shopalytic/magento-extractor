@@ -150,13 +150,13 @@ class Shopalytic_Extractor_Model_Exporter extends Shopalytic_Extractor_Model_Exp
 				);
 			}
 
-
-			// payment type
 			$payment = $order->getPayment();
-			$properties['payment_type'] = array(
-				'type' => $payment->getMethod(),
-				'cc_type' => $payment->getCcType()
-			);
+			if($payment->getMethod() || $payment->getCcType()) {
+				$properties['payment_type'] = array(
+					'type' => $payment->getMethod(),
+					'cc_type' => $payment->getCcType()
+				);
+			}
 
 			// Discount
 			if($order->getCouponCode()) {
