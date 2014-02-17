@@ -21,15 +21,24 @@ class Shopalytic_Extractor_ExtractController extends Mage_Core_Controller_Front_
 			die();
 		}
 
-		if($exporter->send($type, $manifest_id, 'json')) {
+		try {
+			if($exporter->send($type, $manifest_id, 'json')) {
+				echo json_encode(array(
+					'status' => '200',
+					'message' => 'Transfered successfully'
+				));
+			} else {
+				$this->getResponse()->setHeader('HTTP/1.1', '400 Bad Request');
+				echo json_encode(array(
+					'status' => '400',
+					'message' => $exporter->errors()
+				));
+			}
+		} catch(Exception $e) {
+			$this->getResponse()->setHeader('HTTP/1.1', '500 Internal Server Error');
 			echo json_encode(array(
-				'status' => '200'
-			));
-		} else {
-			$this->getResponse()->setHeader('HTTP/1.1', '400 Bad Request');
-			echo json_encode(array(
-				'status' => '400',
-				'message' => $exporter->errors()
+				'status' => '500',
+				'message' => 'Exception in plugin while transfering data: ' . $e->getMessage()
 			));
 		}
     }
@@ -53,6 +62,7 @@ class Shopalytic_Extractor_ExtractController extends Mage_Core_Controller_Front_
 			echo json_encode(array(
 				'status' => '200',
 				'magento_version' => Mage::getVersion(),
+				'plugin_version' => (string) Mage::getConfig()->getNode()->modules->Shopalytic_Extractor->version,
 				'counts' => array(
 					'customers' => $exporter->count('customers'),
 					'orders' => $exporter->count('orders'),

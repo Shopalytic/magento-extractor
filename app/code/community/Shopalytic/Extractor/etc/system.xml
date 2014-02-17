@@ -15,6 +15,7 @@
                     <show_in_default>1</show_in_default>
                     <show_in_website>1</show_in_website>
                     <show_in_store>1</show_in_store>
+                    <comment><![CDATA[<span style="font-size: 16px; color: red">You must have an account with <a href="https://www.shopalytic.com">Shopalytic.com</a> to use the Shopalytic plugin.]]></comment>
                     <fields>
 						<enabled translate="label">
                             <label>Enabled</label>
@@ -32,6 +33,7 @@
                             <show_in_default>1</show_in_default>
                             <show_in_website>1</show_in_website>
                             <show_in_store>1</show_in_store>
+                            <comment> <![CDATA[Shopalytic automatically configures the API token when you add Magento as a data source to a site. Visit <a href="https://www.shopalytic.com">Shopalytic.com</a> to create a new account and connect Magento to Shopalytic.]]> </comment>
                         </token>
 						<debug translate="label">
                             <label>Debug Mode</label>

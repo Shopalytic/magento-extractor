@@ -121,20 +121,12 @@ class Shopalytic_Extractor_Model_ExporterBase {
 			$client->setParameterPost('gzip', false);
 		}
 
-		try {
-			$response = $client->request();
-			if($response->isSuccessful()) {
-				return true;
-			} else {
-				$this->error('Failed to transfer data: ' . $response->getMessage());
-				$this->helper()->debug($response->getRawBody());
-				return false;
-			}
-
-		} catch(Exception $e) {
-			$msg = 'Failed to transfer data';
-			$this->error($msg);
-			$this->helper()->debug($msg);
+		$response = $client->request();
+		if($response->isSuccessful()) {
+			return true;
+		} else {
+			$this->error('Failed to transfer data (response from Shopalytic): ' . $response->getRawBody());
+			$this->helper()->debug($response->getRawBody());
 			return false;
 		}
 	}
