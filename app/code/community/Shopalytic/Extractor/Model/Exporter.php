@@ -209,12 +209,20 @@ class Shopalytic_Extractor_Model_Exporter extends Shopalytic_Extractor_Model_Exp
 				$properties['total_giftcard'] = $this->money($order->getGiftCardsAmount());
 			}
 
+			// Get all the sub product sub product ids
+			$sub_products = array();
+			foreach($order->getAllItems() as $item) {
+				if($item->getParentItemId()) {
+					$sub_products[$item->getParentItemId()][] = $item->getProductId();
+				}
+			}
+
 			// Line items
 			$items = $order->getAllVisibleItems();
 			if($items) {
 				$properties['line_items'] = array();
 				foreach ($items as $item) {
-					$properties['line_items'][] = array(
+					$line = array(
 						'sku' => $item['sku'],
 						'product_id' => $item['product_id'],
 						'qty_ordered' => (int) $item['qty_ordered'],
@@ -223,6 +231,13 @@ class Shopalytic_Extractor_Model_Exporter extends Shopalytic_Extractor_Model_Exp
 						'amount_refunded' => $this->money($item['amount_refunded']),
 						'cost' => $this->money($item['base_cost'])
 					);
+
+					// Add the bundled sub products if there are any
+					if(isset($sub_products[$item->getItemId()])) {
+						$line['sub_product_ids'] = $sub_products[$item->getItemId()];
+					}
+
+					$properties['line_items'][] = $line;
 				}
 			}
 
@@ -316,18 +331,33 @@ class Shopalytic_Extractor_Model_Exporter extends Shopalytic_Extractor_Model_Exp
 				$properties['total_tax'] = $this->money($totals['tax']->getValue());
 			}
 
+			// Get all the sub product sub product ids
+			$sub_products = array();
+			foreach($quote->getAllItems() as $item) {
+				if($item->getParentItemId()) {
+					$sub_products[$item->getParentItemId()][] = $item->getProductId();
+				}
+			}
+
 			// Line items
 			$items = $quote->getAllVisibleItems();
 			if($items) {
 				$properties['line_items'] = array();
 				foreach ($items as $item) {
-					$properties['line_items'][] = array(
+					$line = array(
 						'sku' => $item['sku'],
 						'product_id' => $item['product_id'],
 						'price' => $this->money($item['price']),
 						'cost' => $this->money($item['base_cost']),
 						'qty' => (int) $item['qty']
 					);
+
+					// Add the bundled sub products if there are any
+					if(isset($sub_products[$item->getItemId()])) {
+						$line['sub_product_ids'] = $sub_products[$item->getItemId()];
+					}
+
+					$properties['line_items'][] = $line;
 				}
 			}
 
