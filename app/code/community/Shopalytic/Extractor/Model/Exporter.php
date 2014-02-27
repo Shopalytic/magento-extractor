@@ -82,6 +82,43 @@ class Shopalytic_Extractor_Model_Exporter extends Shopalytic_Extractor_Model_Exp
 		return $products;
 	}
 
+	public function inventory_collection() {
+		return Mage::getModel('cataloginventory/stock_item')
+			->getCollection()
+			->addFieldToFilter('type_id', array('neq' => 'grouped'))
+			->addFieldToFilter('type_id', array('neq' => 'bundle'))
+			->addFieldToFilter(
+				array('attribute' => 'manage_stock', 'eq' => 1),
+				array('attribute' => 'use_config_manage_stock', 'eq' => 1)
+			);
+	}
+
+	public function inventory() {
+		$items = array();
+
+
+		$inventory_collection = $this->inventory_collection();
+		$inventory_collection->getSelect()->limit($this->limit, $this->offset);
+
+		if(!count($inventory_collection)) {
+			return array();
+		}
+
+		foreach($inventory_collection as $item) {
+			$properties = array(
+				'product_id' => $item->getId(),
+				'backorders' => round($item->getBackorders()),
+				'qty' => round($item->getQty()),
+				'is_in_stock' => $item->getIsInStock() ? 'true' : 'false',
+
+			);
+
+			$items[] = $properties;
+		}
+
+		return $items;
+	}
+
 	public function orders_collection() {
 		return Mage::getModel('sales/order')->getCollection()
 			->addAttributeToFilter('updated_at', array('from' => $this->last_update, 'to' => $this->stop_time));

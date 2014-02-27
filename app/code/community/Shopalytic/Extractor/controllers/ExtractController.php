@@ -68,6 +68,7 @@ class Shopalytic_Extractor_ExtractController extends Mage_Core_Controller_Front_
 					'orders' => $exporter->count('orders'),
 					'carts' => $exporter->count('carts'),
 					'products' => $exporter->count('products'),
+					'inventory' => $exporter->count('inventory')
 				)
 			));
 		}
