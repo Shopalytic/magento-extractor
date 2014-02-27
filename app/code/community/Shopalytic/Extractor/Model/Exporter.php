@@ -35,7 +35,7 @@ class Shopalytic_Extractor_Model_Exporter extends Shopalytic_Extractor_Model_Exp
 	}
 
 	public function products_collection() {
-		return Mage::getModel('catalog/product')->getCollection()
+		return Mage::getResourceModel('catalog/product_collection')
 			->addAttributeToSelect('name')
 			->addAttributeToSelect('cost')
 			->addAttributeToSelect('url_path')
@@ -46,7 +46,8 @@ class Shopalytic_Extractor_Model_Exporter extends Shopalytic_Extractor_Model_Exp
 	public function products() {
 		$products = array();
 
-		$product_collection = Mage::getResourceModel('catalog/product_collection');
+
+		$product_collection = $this->products_collection();
 		$product_collection->getSelect()->limit($this->limit, $this->offset);
 
 		if(!count($product_collection)) {
