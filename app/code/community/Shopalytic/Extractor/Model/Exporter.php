@@ -14,7 +14,7 @@ class Shopalytic_Extractor_Model_Exporter extends Shopalytic_Extractor_Model_Exp
 		$customer_collection = $this->customers_collection();
 		$customer_collection->getSelect()->limit($this->limit, $this->offset);
 
-		if(!count($customer_collection)) {
+		if(empty($customer_collection)) {
 			return array();
 		}
 
@@ -50,7 +50,7 @@ class Shopalytic_Extractor_Model_Exporter extends Shopalytic_Extractor_Model_Exp
 		$product_collection = $this->products_collection();
 		$product_collection->getSelect()->limit($this->limit, $this->offset);
 
-		if(!count($product_collection)) {
+		if(empty($product_collection)) {
 			return array();
 		}
 
@@ -100,7 +100,7 @@ class Shopalytic_Extractor_Model_Exporter extends Shopalytic_Extractor_Model_Exp
 		$inventory_collection = $this->inventory_collection();
 		$inventory_collection->getSelect()->limit($this->limit, $this->offset);
 
-		if(!count($inventory_collection)) {
+		if(empty($inventory_collection)) {
 			return array();
 		}
 
@@ -130,7 +130,7 @@ class Shopalytic_Extractor_Model_Exporter extends Shopalytic_Extractor_Model_Exp
 		$orders_collection = $this->orders_collection();
 		$orders_collection->getSelect()->limit($this->limit, $this->offset);
 
-		if(!count($orders_collection)) {
+		if(empty($orders_collection)) {
 			return array();
 		}
 
@@ -269,7 +269,7 @@ class Shopalytic_Extractor_Model_Exporter extends Shopalytic_Extractor_Model_Exp
 		$quote_collection = $this->carts_collection();
 		$quote_collection->getSelect()->limit($this->limit, $this->offset);
 
-		if(!count($quote_collection)) {
+		if(empty($quote_collection)) {
 			return array();
 		}
 
