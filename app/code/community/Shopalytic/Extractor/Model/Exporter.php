@@ -186,6 +186,9 @@ class Shopalytic_Extractor_Model_Exporter extends Shopalytic_Extractor_Model_Exp
 				'refunded_tax' => $this->money($order->getTaxRefunded())
 			);
 
+			$cust_group = Mage::getModel('customer/group')->load($order->getCustomerGroupId());
+			$properties['customer_group'] = $cust_group->getCode();
+
 			$shipping = $order->getShippingAddress();
 			if($shipping) {
 				$properties['shipping'] = array(
@@ -375,6 +378,9 @@ class Shopalytic_Extractor_Model_Exporter extends Shopalytic_Extractor_Model_Exp
 				'total' => $this->money($quote->getGrandTotal()),
 				'subtotal' => $this->money($quote->getSubtotal())
 			);
+
+			$cust_group = Mage::getModel('customer/group')->load($quote->getCustomerGroupId());
+			$properties['customer_group'] = $cust_group->getCode();
 
 			$payment = $quote->getPayment();
 			if($payment->getMethod() || $payment->getCcType()) {
