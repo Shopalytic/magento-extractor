@@ -206,13 +206,8 @@ class Shopalytic_Extractor_Model_Exporter extends Shopalytic_Extractor_Model_Exp
 				);
 			}
 
-			if($order->getAppliedRuleIds() != '') {
-				$discount_rules = array();
-				foreach(explode(',', $order->getAppliedRuleIds()) as $rule_id) {
-					$rule = Mage::getModel('catalogrule/rule')->load($rule_id);
-					$discount_rules[] = $rule->getName();
-				}
-
+			$discount_rules = $this->discount_rules($order->getAppliedRuleIds());
+			if($discount_rules) {
 				$properties['discount_rules'] = $discount_rules;
 			}
 
@@ -245,13 +240,8 @@ class Shopalytic_Extractor_Model_Exporter extends Shopalytic_Extractor_Model_Exp
 						'discount_refunded' => $this->money($item['discount_refunded'])
 					);
 
-					if($item->getAppliedRuleIds() != '') {
-						$discount_rules = array();
-						foreach(explode(',', $item->getAppliedRuleIds()) as $rule_id) {
-							$rule = Mage::getModel('catalogrule/rule')->load($rule_id);
-							$discount_rules[] = $rule->getName();
-						}
-
+					$discount_rules = $this->discount_rules($item->getAppliedRuleIds());
+					if($discount_rules) {
 						$line['discount_rules'] = $discount_rules;
 					}
 
@@ -263,28 +253,14 @@ class Shopalytic_Extractor_Model_Exporter extends Shopalytic_Extractor_Model_Exp
 					$product_options = $item->getProductOptions();
 
 					// Item attributes
-					if(!empty($product_options['attributes_info'])) {
-						$attributes = array();
-						foreach ($product_options['attributes_info'] as $attribute) {
-							$attributes[] = array(
-								'name' => $attribute['label'],
-								'value' => $attribute['value'],
-							);
-						}
-
+					$attributes = $this->product_attributes($product_options);
+					if($attributes) {
 						$line['attributes'] = $attributes;
 					}
 
 					// Item options
-					if(!empty($product_options['options'])) {
-						$options = array();
-						foreach ($product_options['options'] as $attribute) {
-							$options[] = array(
-								'name' => $attribute['label'],
-								'value' => $attribute['value'],
-							);
-						}
-
+					$options = $this->product_options($product_options);
+					if($options) {
 						$line['options'] = $options;
 					}
 
@@ -314,6 +290,48 @@ class Shopalytic_Extractor_Model_Exporter extends Shopalytic_Extractor_Model_Exp
 	public function carts_collection() {
 		return Mage::getModel('sales/quote')->getCollection()
 			->addFieldToFilter('updated_at', array('from' => $this->last_update, 'to' => $this->stop_time));
+	}
+
+	public function product_attributes($attrs) {
+		$attributes = array();
+		if(!empty($attrs['attributes_info'])) {
+			foreach($attrs['attributes_info'] as $attribute) {
+				$attributes[] = array(
+					'name' => $attribute['label'],
+					'value' => $attribute['value'],
+				);
+			}
+		}
+
+		return $attributes;
+	}
+
+	public function product_options($opts) {
+		$options = array();
+		if(!empty($opts['options'])) {
+			foreach($opts['options'] as $option) {
+				$options[] = array(
+					'name' => $option['label'],
+					'value' => $option['value'],
+				);
+			}
+		}
+
+		return $options;
+	}
+
+	public function discount_rules($rule_string) {
+		if($rule_string == '') {
+			return array();
+		}
+
+		$rules = array();
+		foreach(explode(',', $rule_string) as $rule_id) {
+			$rule = Mage::getModel('catalogrule/rule')->load($rule_id);
+			$rules[] = $rule->getName();
+		}
+
+		return $rules;
 	}
 
 	public function carts() {
@@ -390,6 +408,11 @@ class Shopalytic_Extractor_Model_Exporter extends Shopalytic_Extractor_Model_Exp
 				}
 			}
 
+			$discount_rules = $this->discount_rules($quote->getAppliedRuleIds());
+			if($discount_rules) {
+				$properties['discount_rules'] = $discount_rules;
+			}
+
 			// Line items
 			$items = $quote->getAllVisibleItems();
 			if($items) {
@@ -400,12 +423,32 @@ class Shopalytic_Extractor_Model_Exporter extends Shopalytic_Extractor_Model_Exp
 						'product_id' => $item['product_id'],
 						'price' => $this->money($item['price']),
 						'cost' => $this->money($item['base_cost']),
-						'qty' => (int) $item['qty']
+						'qty' => (int) $item['qty'],
+						'discount' => $this->money($item['discount_amount']),
 					);
 
 					// Add the bundled sub products if there are any
 					if(isset($sub_products[$item->getItemId()])) {
 						$line['sub_product_ids'] = $sub_products[$item->getItemId()];
+					}
+
+					$discount_rules = $this->discount_rules($item->getAppliedRuleIds());
+					if($discount_rules) {
+						$line['discount_rules'] = $discount_rules;
+					}
+
+					$product_options = $item->getProduct()->getTypeInstance(true)->getOrderOptions($item->getProduct());
+
+					// Item attributes
+					$attributes = $this->product_attributes($product_options);
+					if($attributes) {
+						$line['attributes'] = $attributes;
+					}
+
+					// Item options
+					$options = $this->product_options($product_options);
+					if($options) {
+						$line['options'] = $options;
 					}
 
 					$properties['line_items'][] = $line;
