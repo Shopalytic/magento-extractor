@@ -66,6 +66,21 @@ class Shopalytic_Extractor_Model_Exporter extends Shopalytic_Extractor_Model_Exp
 				'updated_at' => $this->utc($product->getUpdatedAt())
 			);
 
+			$children_ids = Mage::getModel('catalog/product_type_configurable')->getChildrenIds($product->getId());
+			$child_it = new RecursiveIteratorIterator(new RecursiveArrayIterator($children_ids));
+			if($child_it->valid()) {
+				$sub_product_ids = array();
+				foreach($child_it as $child_id) {
+					if($child_id != '') {
+						$sub_product_ids[] = $child_id;
+					}
+				}
+
+				if(!empty($sub_product_ids)) {
+					$properties['sub_product_ids'] = $sub_product_ids;
+				}
+			}
+
 			// Get the categories
 			$product_categories = $product->getCategoryCollection()->addAttributeToSelect('name');
 			if(count($product_categories)) {
