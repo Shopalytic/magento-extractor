@@ -25,7 +25,8 @@ class Shopalytic_Extractor_Model_Exporter extends Shopalytic_Extractor_Model_Exp
 				'last_name' => $customer->getlastname(),
 				'email' => $customer->getEmail(),
 				'created_at' => $this->utc($customer->getCreatedAt()),
-				'updated_at' => $this->utc($customer->getUpdatedAt())
+				'updated_at' => $this->utc($customer->getUpdatedAt()),
+				'customer_group' => $this->group_name_from_id($customer->getGroupId())
 			);
 
 			$customers[] = $properties;
@@ -183,11 +184,9 @@ class Shopalytic_Extractor_Model_Exporter extends Shopalytic_Extractor_Model_Exp
 				'total_refund' => $this->money($order->getTotalRefunded()),
 				'refunded_discount' => $this->money($order->getDiscountRefunded()),
 				'refunded_shipping' => $this->money($order->getShippingRefunded()),
-				'refunded_tax' => $this->money($order->getTaxRefunded())
+				'refunded_tax' => $this->money($order->getTaxRefunded()),
+				'customer_group' => $this->group_name_from_id($order->getCustomerGroupId())
 			);
-
-			$cust_group = Mage::getModel('customer/group')->load($order->getCustomerGroupId());
-			$properties['customer_group'] = $cust_group->getCode();
 
 			$shipping = $order->getShippingAddress();
 			if($shipping) {
@@ -310,6 +309,11 @@ class Shopalytic_Extractor_Model_Exporter extends Shopalytic_Extractor_Model_Exp
 			->addFieldToFilter('updated_at', array('from' => $this->last_update, 'to' => $this->stop_time));
 	}
 
+	public function group_name_from_id($id) {
+		$cust_group = Mage::getModel('customer/group')->load($id);
+		return $cust_group->getCode();
+	}
+
 	public function product_attributes($attrs) {
 		$attributes = array();
 		if(!empty($attrs['attributes_info'])) {
@@ -376,11 +380,10 @@ class Shopalytic_Extractor_Model_Exporter extends Shopalytic_Extractor_Model_Exp
 				'customer_first_name' => $quote->getCustomerFirstname(),
 				'customer_last_name' => $quote->getCustomerLastname(),
 				'total' => $this->money($quote->getGrandTotal()),
-				'subtotal' => $this->money($quote->getSubtotal())
+				'subtotal' => $this->money($quote->getSubtotal()),
+				'customer_group' => $this->group_name_from_id($quote->getCustomerGroupId())
 			);
 
-			$cust_group = Mage::getModel('customer/group')->load($quote->getCustomerGroupId());
-			$properties['customer_group'] = $cust_group->getCode();
 
 			$payment = $quote->getPayment();
 			if($payment->getMethod() || $payment->getCcType()) {
