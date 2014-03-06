@@ -66,6 +66,7 @@ class Shopalytic_Extractor_Model_Exporter extends Shopalytic_Extractor_Model_Exp
 				'updated_at' => $this->utc($product->getUpdatedAt())
 			);
 
+			// Get the categories
 			$product_categories = $product->getCategoryCollection()->addAttributeToSelect('name');
 			if(count($product_categories)) {
 				$categories = array();
@@ -235,6 +236,34 @@ class Shopalytic_Extractor_Model_Exporter extends Shopalytic_Extractor_Model_Exp
 					// Add the bundled sub products if there are any
 					if(isset($sub_products[$item->getItemId()])) {
 						$line['sub_product_ids'] = $sub_products[$item->getItemId()];
+					}
+
+					$product_options = $item->getProductOptions();
+
+					// Item attributes
+					if(!empty($product_options['attributes_info'])) {
+						$attributes = array();
+						foreach ($product_options['attributes_info'] as $attribute) {
+							$attributes[] = array(
+								'name' => $attribute['label'],
+								'value' => $attribute['value'],
+							);
+						}
+
+						$line['attributes'] = $attributes;
+					}
+
+					// Item options
+					if(!empty($product_options['options'])) {
+						$options = array();
+						foreach ($product_options['options'] as $attribute) {
+							$options[] = array(
+								'name' => $attribute['label'],
+								'value' => $attribute['value'],
+							);
+						}
+
+						$line['options'] = $options;
 					}
 
 					$properties['line_items'][] = $line;
