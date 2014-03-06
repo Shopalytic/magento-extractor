@@ -206,6 +206,16 @@ class Shopalytic_Extractor_Model_Exporter extends Shopalytic_Extractor_Model_Exp
 				);
 			}
 
+			if($order->getAppliedRuleIds() != '') {
+				$discount_rules = array();
+				foreach(explode(',', $order->getAppliedRuleIds()) as $rule_id) {
+					$rule = Mage::getModel('catalogrule/rule')->load($rule_id);
+					$discount_rules[] = $rule->getName();
+				}
+
+				$properties['discount_rules'] = $discount_rules;
+			}
+
 			if($order->getGiftCardsAmount() > 0) {
 				$properties['total_giftcard'] = $this->money($order->getGiftCardsAmount());
 			}
@@ -230,8 +240,20 @@ class Shopalytic_Extractor_Model_Exporter extends Shopalytic_Extractor_Model_Exp
 						'qty_refunded' => (int) $item['qty_refunded'],
 						'price' => $this->money($item['price']),
 						'amount_refunded' => $this->money($item['amount_refunded']),
-						'cost' => $this->money($item['base_cost'])
+						'cost' => $this->money($item['base_cost']),
+						'discount' => $this->money($item['discount_amount']),
+						'discount_refunded' => $this->money($item['discount_refunded'])
 					);
+
+					if($item->getAppliedRuleIds() != '') {
+						$discount_rules = array();
+						foreach(explode(',', $item->getAppliedRuleIds()) as $rule_id) {
+							$rule = Mage::getModel('catalogrule/rule')->load($rule_id);
+							$discount_rules[] = $rule->getName();
+						}
+
+						$line['discount_rules'] = $discount_rules;
+					}
 
 					// Add the bundled sub products if there are any
 					if(isset($sub_products[$item->getItemId()])) {
