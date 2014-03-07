@@ -69,7 +69,7 @@ class Shopalytic_Extractor_Model_ExporterBase {
 
 	public function count($method) {
 		$collection = $this->{ $method . '_collection' }();
-		return $collection->count();
+		return $collection->getSize();
 	}
 
 	public function tracking_url() {

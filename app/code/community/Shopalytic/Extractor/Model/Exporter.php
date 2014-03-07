@@ -14,7 +14,7 @@ class Shopalytic_Extractor_Model_Exporter extends Shopalytic_Extractor_Model_Exp
 		$customer_collection = $this->customers_collection();
 		$customer_collection->getSelect()->limit($this->limit, $this->offset);
 
-		if(!count($customer_collection)) {
+		if(empty($customer_collection)) {
 			return array();
 		}
 
@@ -25,7 +25,8 @@ class Shopalytic_Extractor_Model_Exporter extends Shopalytic_Extractor_Model_Exp
 				'last_name' => $customer->getlastname(),
 				'email' => $customer->getEmail(),
 				'created_at' => $this->utc($customer->getCreatedAt()),
-				'updated_at' => $this->utc($customer->getUpdatedAt())
+				'updated_at' => $this->utc($customer->getUpdatedAt()),
+				'customer_group' => $this->group_name_from_id($customer->getGroupId())
 			);
 
 			$customers[] = $properties;
@@ -35,7 +36,7 @@ class Shopalytic_Extractor_Model_Exporter extends Shopalytic_Extractor_Model_Exp
 	}
 
 	public function products_collection() {
-		return Mage::getModel('catalog/product')->getCollection()
+		return Mage::getResourceModel('catalog/product_collection')
 			->addAttributeToSelect('name')
 			->addAttributeToSelect('cost')
 			->addAttributeToSelect('url_path')
@@ -46,10 +47,11 @@ class Shopalytic_Extractor_Model_Exporter extends Shopalytic_Extractor_Model_Exp
 	public function products() {
 		$products = array();
 
-		$product_collection = Mage::getResourceModel('catalog/product_collection');
+
+		$product_collection = $this->products_collection();
 		$product_collection->getSelect()->limit($this->limit, $this->offset);
 
-		if(!count($product_collection)) {
+		if(empty($product_collection)) {
 			return array();
 		}
 
@@ -65,6 +67,22 @@ class Shopalytic_Extractor_Model_Exporter extends Shopalytic_Extractor_Model_Exp
 				'updated_at' => $this->utc($product->getUpdatedAt())
 			);
 
+			$children_ids = Mage::getModel('catalog/product_type_configurable')->getChildrenIds($product->getId());
+			$child_it = new RecursiveIteratorIterator(new RecursiveArrayIterator($children_ids));
+			if($child_it->valid()) {
+				$sub_product_ids = array();
+				foreach($child_it as $child_id) {
+					if($child_id != '') {
+						$sub_product_ids[] = $child_id;
+					}
+				}
+
+				if(!empty($sub_product_ids)) {
+					$properties['sub_product_ids'] = $sub_product_ids;
+				}
+			}
+
+			// Get the categories
 			$product_categories = $product->getCategoryCollection()->addAttributeToSelect('name');
 			if(count($product_categories)) {
 				$categories = array();
@@ -81,6 +99,43 @@ class Shopalytic_Extractor_Model_Exporter extends Shopalytic_Extractor_Model_Exp
 		return $products;
 	}
 
+	public function inventory_collection() {
+		return Mage::getModel('cataloginventory/stock_item')
+			->getCollection()
+			->addFieldToFilter('type_id', array('neq' => 'grouped'))
+			->addFieldToFilter('type_id', array('neq' => 'bundle'))
+			->addFieldToFilter(
+				array('attribute' => 'manage_stock', 'eq' => 1),
+				array('attribute' => 'use_config_manage_stock', 'eq' => 1)
+			);
+	}
+
+	public function inventory() {
+		$items = array();
+
+
+		$inventory_collection = $this->inventory_collection();
+		$inventory_collection->getSelect()->limit($this->limit, $this->offset);
+
+		if(empty($inventory_collection)) {
+			return array();
+		}
+
+		foreach($inventory_collection as $item) {
+			$properties = array(
+				'product_id' => $item->getId(),
+				'backorders' => round($item->getBackorders()),
+				'qty' => round($item->getQty()),
+				'is_in_stock' => $item->getIsInStock() ? 'true' : 'false',
+
+			);
+
+			$items[] = $properties;
+		}
+
+		return $items;
+	}
+
 	public function orders_collection() {
 		return Mage::getModel('sales/order')->getCollection()
 			->addAttributeToFilter('updated_at', array('from' => $this->last_update, 'to' => $this->stop_time));
@@ -92,7 +147,7 @@ class Shopalytic_Extractor_Model_Exporter extends Shopalytic_Extractor_Model_Exp
 		$orders_collection = $this->orders_collection();
 		$orders_collection->getSelect()->limit($this->limit, $this->offset);
 
-		if(!count($orders_collection)) {
+		if(empty($orders_collection)) {
 			return array();
 		}
 
@@ -129,7 +184,8 @@ class Shopalytic_Extractor_Model_Exporter extends Shopalytic_Extractor_Model_Exp
 				'total_refund' => $this->money($order->getTotalRefunded()),
 				'refunded_discount' => $this->money($order->getDiscountRefunded()),
 				'refunded_shipping' => $this->money($order->getShippingRefunded()),
-				'refunded_tax' => $this->money($order->getTaxRefunded())
+				'refunded_tax' => $this->money($order->getTaxRefunded()),
+				'customer_group' => $this->group_name_from_id($order->getCustomerGroupId())
 			);
 
 			$shipping = $order->getShippingAddress();
@@ -167,8 +223,21 @@ class Shopalytic_Extractor_Model_Exporter extends Shopalytic_Extractor_Model_Exp
 				);
 			}
 
+			$discount_rules = $this->discount_rules($order->getAppliedRuleIds());
+			if($discount_rules) {
+				$properties['discount_rules'] = $discount_rules;
+			}
+
 			if($order->getGiftCardsAmount() > 0) {
 				$properties['total_giftcard'] = $this->money($order->getGiftCardsAmount());
+			}
+
+			// Get all the sub product sub product ids
+			$sub_products = array();
+			foreach($order->getAllItems() as $item) {
+				if($item->getParentItemId()) {
+					$sub_products[$item->getParentItemId()][] = $item->getProductId();
+				}
 			}
 
 			// Line items
@@ -176,15 +245,43 @@ class Shopalytic_Extractor_Model_Exporter extends Shopalytic_Extractor_Model_Exp
 			if($items) {
 				$properties['line_items'] = array();
 				foreach ($items as $item) {
-					$properties['line_items'][] = array(
+					$line = array(
 						'sku' => $item['sku'],
 						'product_id' => $item['product_id'],
 						'qty_ordered' => (int) $item['qty_ordered'],
 						'qty_refunded' => (int) $item['qty_refunded'],
 						'price' => $this->money($item['price']),
 						'amount_refunded' => $this->money($item['amount_refunded']),
-						'cost' => $this->money($item['base_cost'])
+						'cost' => $this->money($item['base_cost']),
+						'discount' => $this->money($item['discount_amount']),
+						'discount_refunded' => $this->money($item['discount_refunded'])
 					);
+
+					$discount_rules = $this->discount_rules($item->getAppliedRuleIds());
+					if($discount_rules) {
+						$line['discount_rules'] = $discount_rules;
+					}
+
+					// Add the bundled sub products if there are any
+					if(isset($sub_products[$item->getItemId()])) {
+						$line['sub_product_ids'] = $sub_products[$item->getItemId()];
+					}
+
+					$product_options = $item->getProductOptions();
+
+					// Item attributes
+					$attributes = $this->product_attributes($product_options);
+					if($attributes) {
+						$line['attributes'] = $attributes;
+					}
+
+					// Item options
+					$options = $this->product_options($product_options);
+					if($options) {
+						$line['options'] = $options;
+					}
+
+					$properties['line_items'][] = $line;
 				}
 			}
 
@@ -212,11 +309,58 @@ class Shopalytic_Extractor_Model_Exporter extends Shopalytic_Extractor_Model_Exp
 			->addFieldToFilter('updated_at', array('from' => $this->last_update, 'to' => $this->stop_time));
 	}
 
+	public function group_name_from_id($id) {
+		$cust_group = Mage::getModel('customer/group')->load($id);
+		return $cust_group->getCode();
+	}
+
+	public function product_attributes($attrs) {
+		$attributes = array();
+		if(!empty($attrs['attributes_info'])) {
+			foreach($attrs['attributes_info'] as $attribute) {
+				$attributes[] = array(
+					'name' => $attribute['label'],
+					'value' => $attribute['value'],
+				);
+			}
+		}
+
+		return $attributes;
+	}
+
+	public function product_options($opts) {
+		$options = array();
+		if(!empty($opts['options'])) {
+			foreach($opts['options'] as $option) {
+				$options[] = array(
+					'name' => $option['label'],
+					'value' => $option['value'],
+				);
+			}
+		}
+
+		return $options;
+	}
+
+	public function discount_rules($rule_string) {
+		if($rule_string == '') {
+			return array();
+		}
+
+		$rules = array();
+		foreach(explode(',', $rule_string) as $rule_id) {
+			$rule = Mage::getModel('catalogrule/rule')->load($rule_id);
+			$rules[] = $rule->getName();
+		}
+
+		return $rules;
+	}
+
 	public function carts() {
 		$quote_collection = $this->carts_collection();
 		$quote_collection->getSelect()->limit($this->limit, $this->offset);
 
-		if(!count($quote_collection)) {
+		if(empty($quote_collection)) {
 			return array();
 		}
 
@@ -236,8 +380,10 @@ class Shopalytic_Extractor_Model_Exporter extends Shopalytic_Extractor_Model_Exp
 				'customer_first_name' => $quote->getCustomerFirstname(),
 				'customer_last_name' => $quote->getCustomerLastname(),
 				'total' => $this->money($quote->getGrandTotal()),
-				'subtotal' => $this->money($quote->getSubtotal())
+				'subtotal' => $this->money($quote->getSubtotal()),
+				'customer_group' => $this->group_name_from_id($quote->getCustomerGroupId())
 			);
+
 
 			$payment = $quote->getPayment();
 			if($payment->getMethod() || $payment->getCcType()) {
@@ -278,18 +424,58 @@ class Shopalytic_Extractor_Model_Exporter extends Shopalytic_Extractor_Model_Exp
 				$properties['total_tax'] = $this->money($totals['tax']->getValue());
 			}
 
+			// Get all the sub product sub product ids
+			$sub_products = array();
+			foreach($quote->getAllItems() as $item) {
+				if($item->getParentItemId()) {
+					$sub_products[$item->getParentItemId()][] = $item->getProductId();
+				}
+			}
+
+			$discount_rules = $this->discount_rules($quote->getAppliedRuleIds());
+			if($discount_rules) {
+				$properties['discount_rules'] = $discount_rules;
+			}
+
 			// Line items
 			$items = $quote->getAllVisibleItems();
 			if($items) {
 				$properties['line_items'] = array();
 				foreach ($items as $item) {
-					$properties['line_items'][] = array(
+					$line = array(
 						'sku' => $item['sku'],
 						'product_id' => $item['product_id'],
 						'price' => $this->money($item['price']),
 						'cost' => $this->money($item['base_cost']),
-						'qty' => (int) $item['qty']
+						'qty' => (int) $item['qty'],
+						'discount' => $this->money($item['discount_amount']),
 					);
+
+					// Add the bundled sub products if there are any
+					if(isset($sub_products[$item->getItemId()])) {
+						$line['sub_product_ids'] = $sub_products[$item->getItemId()];
+					}
+
+					$discount_rules = $this->discount_rules($item->getAppliedRuleIds());
+					if($discount_rules) {
+						$line['discount_rules'] = $discount_rules;
+					}
+
+					$product_options = $item->getProduct()->getTypeInstance(true)->getOrderOptions($item->getProduct());
+
+					// Item attributes
+					$attributes = $this->product_attributes($product_options);
+					if($attributes) {
+						$line['attributes'] = $attributes;
+					}
+
+					// Item options
+					$options = $this->product_options($product_options);
+					if($options) {
+						$line['options'] = $options;
+					}
+
+					$properties['line_items'][] = $line;
 				}
 			}
 
